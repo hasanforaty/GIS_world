@@ -41,17 +41,18 @@ class FeatureApiView(APIView):
             with getDatabaseConnection() as connection:
                 with connection.cursor() as curser:
                     geoColumn = getGeometryColumns(curser, layer_name)
-                    sql_command = "Insert into {} "+"("+geoColumn
+                    sql_command = "Insert into {} " + "(" + geoColumn
                     for key in properties.keys():
-                        sql_command += ', '+key
+                        sql_command += ', ' + key
                     sql_command += ') values (%s'
                     for value in properties.values():
-                        sql_command += ', '+'\''+value+'\''
-                    sql_command +=")"
+                        sql_command += ', %s'
+                    sql_command += ")"
                     print(sql_command)
                     sql = SQL(sql_command).format(Identifier(layer_name))
-                    print(sql)
-                    curser.execute(sql, (wkb,))
+                    value = list(properties.values())
+                    value.insert(0, wkb)
+                    curser.execute(sql, value)
         except ValueError as e:
             return Response(status=422, exception=e)
         return Response(status=200)

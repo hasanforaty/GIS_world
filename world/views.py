@@ -41,7 +41,7 @@ class FeaturesApiView(APIView):
             properties = request.data['properties']
             wkb = geos.wkb
             with getDatabaseConnection() as connection:
-                with connection.cursor() as curser:
+                with connection.cursor(cursor_factory=RealDictCursor) as curser:
                     geoColumn = getGeometryColumns(connection, layer_name)
                     sql_command = "Insert into {} " + "(" + geoColumn
                     for key in properties.keys():
@@ -55,11 +55,12 @@ class FeaturesApiView(APIView):
                     value = list(properties.values())
                     value.insert(0, wkb)
                     curser.execute(sql, value)
+                    result = geos.geojson
         except ValueError as e:
             return Response(status=422, exception=e)
         except psycopg2.errors.InvalidParameterValue as e:
             return Response(status=400, data="Missmatch :" + str(e))
-        return Response(status=200)
+        return Response(status=200, data=result)
 
     def get(self, request, layer_name):
         Limit = 1000
@@ -69,15 +70,15 @@ class FeaturesApiView(APIView):
         url = request.build_absolute_uri().split("?")[0]
         try:
             query_set = request.GET
-            page = query_set['page']
+            page = int(query_set['page'])
             Limit = query_set['limit']
             Offset = (page - 1) * Limit
             if page > 1:
-                query = f'?page={page-1}&limit={Limit}'
-                previous_url = url+query
+                query = f'?page={page - 1}&limit={Limit}'
+                previous_url = url + query
         except KeyError as e:
             pass
-        query = f'?page={page+1}&limit={Limit}'
+        query = f'?page={page + 1}&limit={Limit}'
         next_url = url + query
         with (getDatabaseConnection() as connection):
             geo_table = getGeometryColumns(connection, layer_name)
@@ -86,7 +87,7 @@ class FeaturesApiView(APIView):
             )
             with connection.cursor(cursor_factory=RealDictCursor) as cursor:
                 try:
-                    cursor.execute(sql_schema, (Limit,Offset))
+                    cursor.execute(sql_schema, (Limit, Offset))
                     results = cursor.fetchall()
                     list = []
                     for result in results:
@@ -132,6 +133,32 @@ class FeatureDetailApiView(APIView):
                     return Response(status=200, data=geo_json)
                 except Exception as e:
                     raise e
+
+    def put(self, request, layer_name, pk):
+        try:
+            geos = GEOSGeometry(str(request.data['geometry']))
+
+            properties = request.data['properties']
+            wkb = geos.wkb
+            with getDatabaseConnection() as connection:
+                primary_column = getPrimaryColumn(connection, layer_name)
+                properties.pop(primary_column, None)
+                with connection.cursor(cursor_factory=RealDictCursor) as curser:
+                    geoColumn = getGeometryColumns(connection, layer_name)
+                    sql_command = "Update {} " + "Set " + geoColumn + " = %s"
+                    for key in properties.keys():
+                        sql_command += ', ' + key + " = %s"
+                    sql_command += " Where  {} = " + pk
+                    print(sql_command)
+                    sql = SQL(sql_command).format(Identifier(layer_name), Identifier(primary_column))
+                    value = list(properties.values())
+                    value.insert(0, wkb)
+                    curser.execute(sql, value)
+        except ValueError as e:
+            return Response(status=422, exception=e)
+        except psycopg2.errors.InvalidParameterValue as e:
+            return Response(status=400, data="Missmatch :" + str(e))
+        return Response(status=200)
 
 
 def getDatabase():

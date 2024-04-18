@@ -17,9 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from world.views import FileUploadAPIView, FeatureApiView
+from world.views import FileUploadAPIView, FeaturesApiView, FeatureDetailApiView
 
 urlpatterns = [
     path('', FileUploadAPIView.as_view()),
-    path('layer/<layer_name>/features/', FeatureApiView.as_view())
+    path('layer/<layer_name>/features/', FeaturesApiView.as_view()),
+    path('layer/<layer_name>/features/<pk>/', FeatureDetailApiView.as_view())
 ]

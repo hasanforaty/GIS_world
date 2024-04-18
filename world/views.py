@@ -6,31 +6,24 @@ import psycopg2
 from django.contrib.gis.geos import GEOSGeometry
 from psycopg2.sql import Identifier, SQL
 from psycopg2.extras import RealDictCursor
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from urllib.parse import urlparse, parse_qsl, urlencode
 
+from rest_framework.viewsets import ViewSet
 
-class FileUploadAPIView(APIView):
-    def post(self, request, format=None):
+from world.serializers import ShapeFileSerializer
 
-        try:
-            file_obj = request.data['file']
-            today_date = datetime.date.today().strftime("%Y%m%d")
-            folder_path = f"./tmp/shapefiles/{file_obj.name}_{today_date}"
 
-            with zipfile.ZipFile(file_obj, 'r') as zip_ref:
-                zip_ref.extractall(path=folder_path)
-            databaseInfo = getDatabase()
-            file_name = file_obj.name.rsplit(".")[0] + today_date
-            command = f"""
-            ogr2ogr -f PostgreSQL  PG:"{databaseInfo}" {folder_path} -nln {file_name} -nlt MULTIPOLYGON"""
-            print(command)
-            os.system(command)
-        except Exception as e:
-            print(e)
-            return Response(status=500)
-        return Response(status=204)
+class ShapeFileUploadViewSet(ViewSet):
+
+    def create(self, request):
+        serializer = ShapeFileSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(status.HTTP_400_BAD_REQUEST)
 
 
 class FeaturesApiView(APIView):

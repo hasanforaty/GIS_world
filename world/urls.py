@@ -15,12 +15,15 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
-from world.views import FileUploadAPIView, FeaturesApiView, FeatureDetailApiView
+from world.views import FeaturesApiView, FeatureDetailApiView, ShapeFileUploadViewSet
+from rest_framework.routers import DefaultRouter
 
+router = DefaultRouter()
+router.register(r'file', ShapeFileUploadViewSet, basename='file')
 urlpatterns = [
-    path('', FileUploadAPIView.as_view()),
+    path('', include(router.urls)),
     path('layer/<layer_name>/features/', FeaturesApiView.as_view()),
     path('layer/<layer_name>/features/<pk>/', FeatureDetailApiView.as_view())
 ]

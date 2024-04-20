@@ -83,18 +83,15 @@ class Features:
 
             with con.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(sql_schema, (limit, offset))
-                results = cursor.fetchall()
-                geo_jsons = []
-                for result in results:
-                    geo_bin = result.pop(geo_table, None)
-                    geometry = GEOSGeometry(geo_bin)
-                    geo_json = {
-                        "geometry": geometry.geojson,
-                        "properties": result,
-                    }
-                    geo_jsons.append(geo_json)
+                result = cursor.fetchone()[0]
+                geo_bin = result.pop(geo_table, None)
+                geometry = GEOSGeometry(geo_bin)
+                geo_json = {
+                    "geometry": geometry.geojson,
+                    "properties": result,
+                }
 
-                return geo_jsons
+                return geo_json
 
     def update(self, pk, geometry: str = None, **kwargs):
 
@@ -115,3 +112,34 @@ class Features:
                 sql = SQL(sql_command).format(Identifier(self.table_name), Identifier(primary_column))
                 value = list(wkb.values())
                 curser.execute(sql, value)
+
+    def filter(self, **kwargs):
+        limit = kwargs.pop('limit', 1000)
+        offset = kwargs.pop('offset', 0)
+        kwargs.pop('pk', None)
+
+        with (getDatabaseConnection() as con):
+            geo_table = self.getGeometryColumns(con)
+            if len(kwargs) > 0:
+                sql_command_query = "where "
+                for key, value in kwargs.items():
+                    sql_command_query += f" And {key} = {value} "
+                sql_command_query.replace('And', '', 1)
+            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ' + sql_command_query).format(
+                Identifier(self.table_name),
+            )
+
+            with con.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(sql_schema, (limit, offset))
+                results = cursor.fetchall()
+                geo_jsons = []
+                for result in results:
+                    geo_bin = result.pop(geo_table, None)
+                    geometry = GEOSGeometry(geo_bin)
+                    geo_json = {
+                        "geometry": geometry.geojson,
+                        "properties": result,
+                    }
+                    geo_jsons.append(geo_json)
+
+                return geo_jsons

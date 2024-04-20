@@ -66,6 +66,8 @@ class FeaturesApiView(GenericViewSet):
                 "previous": previous_url,
                 "results": result
             })
+        except ValueError as e:
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=e.args)
         except Exception as e:
             raise e
 

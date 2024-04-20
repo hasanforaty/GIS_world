@@ -121,39 +121,42 @@ class Features:
                 curser.execute(sql, value)
 
     def filter(self, **kwargs):
-        limit = kwargs.pop('limit', 1000)
-        offset = kwargs.pop('offset', 0)
-        kwargs.pop('pk', None)
+        try:
+            limit = kwargs.pop('limit', 1000)
+            offset = kwargs.pop('offset', 0)
+            kwargs.pop('pk', None)
 
-        with (getDatabaseConnection() as con):
-            geo_table = self.getGeometryColumns(con)
-            sql_command_query = ''
-            if len(kwargs) > 0:
-                sql_command_query = "where "
-                for key, value in kwargs.items():
-                    if isinstance(value, list):
-                        value = value[0]
-                    sql_command_query += f" And {key} = '{value}' "
-                    print(sql_command_query)
-                sql_command_query = sql_command_query.replace('And', '', 1)
-            sql_schema = SQL('Select * from {} ' + sql_command_query + " LIMIT %s OFFSET %s ").format(
-                Identifier(self.table_name),
-            )
+            with (getDatabaseConnection() as con):
+                geo_table = self.getGeometryColumns(con)
+                sql_command_query = ''
+                if len(kwargs) > 0:
+                    sql_command_query = "where "
+                    for key, value in kwargs.items():
+                        if isinstance(value, list):
+                            value = value[0]
+                        sql_command_query += f" And {key} = '{value}' "
+                        print(sql_command_query)
+                    sql_command_query = sql_command_query.replace('And', '', 1)
+                sql_schema = SQL('Select * from {} ' + sql_command_query + " LIMIT %s OFFSET %s ").format(
+                    Identifier(self.table_name),
+                )
 
-            with con.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(sql_schema, (limit, offset))
-                results = cursor.fetchall()
-                geo_jsons = []
-                for result in results:
-                    geo_bin = result.pop(geo_table, None)
-                    geometry = GEOSGeometry(geo_bin)
-                    geo_json = {
-                        "geometry": geometry.geojson,
-                        "properties": result,
-                    }
-                    geo_jsons.append(geo_json)
+                with con.cursor(cursor_factory=RealDictCursor) as cursor:
+                    cursor.execute(sql_schema, (limit, offset))
+                    results = cursor.fetchall()
+                    geo_jsons = []
+                    for result in results:
+                        geo_bin = result.pop(geo_table, None)
+                        geometry = GEOSGeometry(geo_bin)
+                        geo_json = {
+                            "geometry": geometry.geojson,
+                            "properties": result,
+                        }
+                        geo_jsons.append(geo_json)
 
-                return geo_jsons
+                    return geo_jsons
+        except psycopg2.errors.UndefinedColumn as e:
+            raise ValueError('Query parameter is not defined as column in database')
 
 
 class DoseNotExist(Exception):

@@ -14,7 +14,7 @@ from urllib.parse import urlparse, parse_qsl, urlencode
 from rest_framework.viewsets import ViewSet, GenericViewSet
 
 from world.serializers import ShapeFileSerializer
-from Features import Features
+from .Features import Features
 
 
 class ShapeFileUploadViewSet(GenericViewSet):
@@ -62,7 +62,7 @@ class FeaturesApiView(GenericViewSet):
         query = f'?page={page + 1}&limit={Limit}'
         next_url = url + query
         try:
-            result = Features(table_name=layer_name).get(offset=Offset, limit=Limit)
+            result = Features(table_name=layer_name).filter(offset=Offset, limit=Limit)
 
             return Response(status=200, data={
                 "page": page,

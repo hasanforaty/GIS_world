@@ -83,7 +83,7 @@ class Features:
 
             with con.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(sql_schema, (limit, offset))
-                result = cursor.fetchone()[0]
+                result = cursor.fetchone()
                 geo_bin = result.pop(geo_table, None)
                 geometry = GEOSGeometry(geo_bin)
                 geo_json = {
@@ -120,6 +120,7 @@ class Features:
 
         with (getDatabaseConnection() as con):
             geo_table = self.getGeometryColumns(con)
+            sql_command_query = ''
             if len(kwargs) > 0:
                 sql_command_query = "where "
                 for key, value in kwargs.items():

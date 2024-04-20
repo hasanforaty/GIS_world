@@ -2,15 +2,17 @@ import psycopg2
 from django.contrib.gis.geos import GEOSGeometry
 from psycopg2.extras import RealDictCursor
 from psycopg2.sql import Identifier, SQL
+import os
 
 
 def getDatabaseConnection():
-    NAME = 'geodjango'
-    USER = "geo"
-    PASSWORD = 'sahan'
-    HOST = 'localhost'
+    NAME = os.environ.get('DB_NAME')
+    USER = os.environ.get("DB_USER")
+    PASSWORD = os.environ.get("DB_PASSWORD")
+    HOST = os.environ.get("DB_HOST")
+    PORT = os.environ.get("DB_PORT")
     return psycopg2.connect(
-        'dbname=' + NAME + ' user=' + USER + ' password=' + PASSWORD + 'host=' + HOST + 'port=5432')
+        'dbname=' + NAME + ' user=' + USER + ' password=' + PASSWORD + 'host=' + HOST + 'port=' + PORT)
 
 
 class Features:

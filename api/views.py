@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from world.serializers import ShapeFileSerializer
+from api.serializers import ShapeFileSerializer
 from .Features import Features, DoseNotExist
 
 

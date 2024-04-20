@@ -76,12 +76,14 @@ class FeaturesApiView(GenericViewSet):
 
     def update(self, request, pk, layer_name):
         try:
-            properties = request.data['properties']
-            Features(table_name=layer_name).update(
-                geometry=str(request.data['geometry']),
-                pk=pk,
-                **properties
-            )
+            data = request.data
+
+            data['table_name'] = layer_name
+            data['pk'] = pk
+            serializer = self.get_serializer(data, data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response(status=422, exception=e)
         except psycopg2.errors.InvalidParameterValue as e:

@@ -59,9 +59,9 @@ class FeatureSerializer(serializers.Serializer):
         return validated_data
 
     def update(self, instance, validated_data):
-        Features(table_name=self.table_name).update(
-            geometry=validated_data.get('geometry'),
-            pk=validated_data.get('pk'),
+        Features(table_name=validated_data.get('table_name')).update(
+            geometry=str(validated_data.get('geometry')),
+            pk=str(validated_data.get('pk')),
             **validated_data.get('properties')
         )
         return validated_data

@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from api.serializers import ShapeFileSerializer
-from .Features import Features, DoseNotExist
+from .features import Features, DoseNotExist
 
 
 class ShapeFileUploadViewSet(GenericViewSet):

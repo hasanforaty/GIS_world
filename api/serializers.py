@@ -1,8 +1,12 @@
 import datetime
 import os
 import zipfile
+
+from django.contrib.gis.forms import GeometryField
 from geo.Geoserver import Geoserver
 from rest_framework import serializers
+
+from api.features import Features
 
 
 class ShapeFileSerializer(serializers.Serializer):
@@ -35,6 +39,32 @@ class ShapeFileSerializer(serializers.Serializer):
         geo.publish_featurestore(workspace=workspace, store_name=store_name, pg_table=file_name)
 
         return file_obj
+
+
+class FeatureSerializer(serializers.Serializer):
+    type = serializers.CharField()
+    geometry = serializers.JSONField()
+    properties = serializers.DictField(required=False)
+    table_name = serializers.CharField(write_only=True)
+    pk = serializers.IntegerField(required=False)
+
+    def create(self, validated_data):
+        result = Features(table_name=validated_data.get('table_name')).create(
+            geometry=str(validated_data.get('geometry')),
+            properties=validated_data.get('properties')
+        )
+        pk = int(result['id'])
+        self.context['pk'] = pk
+        validated_data.update({'pk': pk})
+        return validated_data
+
+    def update(self, instance, validated_data):
+        Features(table_name=self.table_name).update(
+            geometry=validated_data.get('geometry'),
+            pk=validated_data.get('pk'),
+            **validated_data.get('properties')
+        )
+        return validated_data
 
 
 def getDatabase():

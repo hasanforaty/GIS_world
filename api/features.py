@@ -45,6 +45,7 @@ class Features:
         geos = GEOSGeometry(geometry)
         wkb = geos.wkb
         with getDatabaseConnection() as con:
+            primary_column = self.getPrimaryColumn(con)
             with con.cursor(cursor_factory=RealDictCursor) as curser:
                 geoColumn = self.getGeometryColumns(con)
                 sql_command = "Insert into {} " + "(" + geoColumn
@@ -55,11 +56,15 @@ class Features:
                     sql_command += ', %s'
                 sql_command += ")"
                 print(sql_command)
-                sql = SQL(sql_command).format(Identifier(self.table_name))
+                sql_command += " RETURNING {};"
+                sql = SQL(sql_command).format(Identifier(self.table_name), Identifier(primary_column))
                 value = list(properties.values())
                 value.insert(0, wkb)
                 curser.execute(sql, value)
-                return geos.geojson
+                return {
+                    "geometry": geos.geojson,
+                    'id': curser.fetchone().get(primary_column)
+                }
 
     def get(self, **kwargs):
         kwargs.pop('limit', 1000)

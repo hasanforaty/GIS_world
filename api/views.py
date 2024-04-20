@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from api.serializers import ShapeFileSerializer
+from api.serializers import ShapeFileSerializer, FeatureSerializer
 from .features import Features, DoseNotExist
 
 
@@ -20,19 +20,22 @@ class ShapeFileUploadViewSet(GenericViewSet):
 
 
 class FeaturesApiView(GenericViewSet):
-    serializer_class = ShapeFileSerializer
+    serializer_class = FeatureSerializer
 
     def create(self, request, layer_name):
         try:
-            result = Features(table_name=layer_name).create(
-                geometry=str(request.data['geometry']),
-                properties=request.data['properties']
-            )
+            data = request.data
+            data['table_name'] = layer_name
+            serializer = self.get_serializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
         except ValueError as e:
+            print(e)
             return Response(status=422, exception=e)
         except psycopg2.errors.InvalidParameterValue as e:
             return Response(status=400, data="Missmatch :" + str(e))
-        return Response(status=200, data=result)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
 
     def list(self, request, layer_name):
         Limit = 1000

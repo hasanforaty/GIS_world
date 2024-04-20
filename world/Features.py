@@ -107,10 +107,10 @@ class Features:
                 sql_command = "Update {} " + "Set "
                 for key in kwargs.keys():
                     sql_command += ', ' + key + " = %s"
-                sql_command.replace(',', '', 1)
+                sql_command = sql_command.replace(',', '', 1)
                 sql_command += " Where  {} = " + pk
                 sql = SQL(sql_command).format(Identifier(self.table_name), Identifier(primary_column))
-                value = list(wkb.values())
+                value = list(kwargs.values())
                 curser.execute(sql, value)
 
     def filter(self, **kwargs):

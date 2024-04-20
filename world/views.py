@@ -77,13 +77,7 @@ class FeaturesApiView(GenericViewSet):
         geo_jsons = Features(table_name=layer_name).get(pk=pk)
         return Response(status=200, data=geo_jsons)
 
-
-class FeatureDetailApiView(APIView):
-    def get(self, reqeust, layer_name, pk):
-        geo_jsons = Features(table_name=layer_name).get(pk=pk)
-        return Response(status=200, data=geo_jsons)
-
-    def put(self, request, layer_name, pk):
+    def update(self, request, pk, layer_name):
         try:
             properties = request.data['properties']
             Features(table_name=layer_name).update(

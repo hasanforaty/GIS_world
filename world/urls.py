@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from world.views import FeaturesApiView, FeatureDetailApiView, ShapeFileUploadViewSet
+from world.views import FeaturesApiView, ShapeFileUploadViewSet
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
@@ -25,5 +25,4 @@ router.register(r'file', ShapeFileUploadViewSet, basename='file')
 router.register('layer/(?P<layer_name>[^/.]+)/features', FeaturesApiView, basename='features')
 urlpatterns = [
     path('', include(router.urls)),
-    # path('layer/<layer_name>/features/<pk>/', FeatureDetailApiView.as_view())
 ]

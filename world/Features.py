@@ -59,7 +59,7 @@ class Features:
                 value = list(properties.values())
                 value.insert(0, wkb)
                 curser.execute(sql, value)
-                result = geos.geojson
+                return geos.geojson
 
     def get(self, **kwargs):
         limit = kwargs.pop('limit', 1000)
@@ -73,7 +73,7 @@ class Features:
             with con.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(sql_schema, (limit, offset))
                 results = cursor.fetchall()
-                list = []
+                geo_jsons = []
                 for result in results:
                     geo_bin = result.pop(geo_table, None)
                     geometry = GEOSGeometry(geo_bin)
@@ -81,6 +81,6 @@ class Features:
                         "geometry": geometry.geojson,
                         "properties": result,
                     }
-                    list.append(geo_json)
+                    geo_jsons.append(geo_json)
 
-                return list
+                return geo_jsons

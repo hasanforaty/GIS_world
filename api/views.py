@@ -43,10 +43,12 @@ class FeaturesApiView(GenericViewSet):
         page = 1
         previous_url = None
         url = request.build_absolute_uri().split("?")[0]
+        query_set = {}
+        query_set.update(request.GET)
         try:
-            query_set = request.GET
-            page = int(query_set['page'])
-            Limit = query_set['limit']
+
+            page = query_set.pop('page', 1)
+            Limit = query_set.pop('limit', 1000)
             Offset = (page - 1) * Limit
             if page > 1:
                 query = f'?page={page - 1}&limit={Limit}'
@@ -56,7 +58,7 @@ class FeaturesApiView(GenericViewSet):
         query = f'?page={page + 1}&limit={Limit}'
         next_url = url + query
         try:
-            result = Features(table_name=layer_name).filter(offset=Offset, limit=Limit)
+            result = Features(table_name=layer_name).filter(offset=Offset, limit=Limit, **query_set)
 
             return Response(status=200, data={
                 "page": page,

@@ -131,9 +131,12 @@ class Features:
             if len(kwargs) > 0:
                 sql_command_query = "where "
                 for key, value in kwargs.items():
-                    sql_command_query += f" And {key} = {value} "
-                sql_command_query.replace('And', '', 1)
-            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ' + sql_command_query).format(
+                    if isinstance(value, list):
+                        value = value[0]
+                    sql_command_query += f" And {key} = '{value}' "
+                    print(sql_command_query)
+                sql_command_query = sql_command_query.replace('And', '', 1)
+            sql_schema = SQL('Select * from {} ' + sql_command_query + " LIMIT %s OFFSET %s ").format(
                 Identifier(self.table_name),
             )
 

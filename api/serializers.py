@@ -26,7 +26,7 @@ class ShapeFileSerializer(serializers.Serializer):
         DB_NAME = os.environ.get('DB_NAME')
         DB_USER = os.environ.get("DB_USER")
         DB_PASSWORD = os.environ.get("DB_PASSWORD")
-        DB_HOST = os.environ.get('DB_HOST')
+        DB_HOST = os.environ.get('DB_GEOSERVER_HOST')
         geo = Geoserver(host, username=username, password=password)
         store_name = f'store_{file_name}'
         geo.create_featurestore(store_name=store_name, workspace=workspace, db=DB_NAME, host=DB_HOST,

@@ -91,39 +91,3 @@ class FeaturesApiView(GenericViewSet):
         except psycopg2.errors.InvalidParameterValue as e:
             return Response(status=400, data="Missmatch :" + str(e))
         return Response(status=200)
-
-
-def getDatabase():
-    NAME = 'geodjango'
-    USER = "geo"
-    PASSWORD = "sahan"
-    return f'user={USER}  dbname={NAME} host=localhost port=5432 password={PASSWORD}'
-
-
-def getDatabaseConnection():
-    NAME = 'geodjango'
-    USER = "geo"
-    PASSWORD = 'sahan'
-    HOST = 'localhost'
-    return psycopg2.connect('dbname=' + NAME + ' user=' + USER + ' password=' + PASSWORD + 'host=' + HOST + 'port=5432')
-
-
-def getGeometryColumns(connection, table_name):
-    with connection.cursor() as cursor:
-        cursor.execute("select f_geometry_column from geometry_columns where f_table_name = %s", (table_name,))
-        return cursor.fetchone()[0]
-
-
-def getPrimaryColumn(connection, table_name):
-    with connection.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT a.attname AS name, format_type(a.atttypid, a.atttypmod) AS type
-            FROM
-                pg_class AS c
-                JOIN pg_index AS i ON c.oid = i.indrelid AND i.indisprimary
-                JOIN pg_attribute AS a ON c.oid = a.attrelid AND a.attnum = ANY(i.indkey)
-                WHERE c.oid = %s::regclass
-            """, (table_name,)
-        )
-        return cursor.fetchone()[0]

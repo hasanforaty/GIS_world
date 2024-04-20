@@ -84,6 +84,8 @@ class Features:
             with con.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute(sql_schema)
                 result = cursor.fetchone()
+                if result is None:
+                    raise DoseNotExist(f"can't find Feature with id:{pk}")
                 geo_bin = result.pop(geo_table, None)
                 geometry = GEOSGeometry(geo_bin)
                 geo_json = {
@@ -144,3 +146,11 @@ class Features:
                     geo_jsons.append(geo_json)
 
                 return geo_jsons
+
+
+class DoseNotExist(Exception):
+    message: str
+
+    def __init__(self, message):
+        self.message = message
+        super().__init__(message)

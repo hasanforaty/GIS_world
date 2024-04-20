@@ -1,20 +1,11 @@
-import datetime
-import os
-import zipfile
-
 import psycopg2
-from django.contrib.gis.geos import GEOSGeometry
-from psycopg2.sql import Identifier, SQL
-from psycopg2.extras import RealDictCursor
+from django.http import Http404
 from rest_framework import status
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from urllib.parse import urlparse, parse_qsl, urlencode
-
-from rest_framework.viewsets import ViewSet, GenericViewSet
+from rest_framework.viewsets import GenericViewSet
 
 from world.serializers import ShapeFileSerializer
-from .Features import Features
+from .Features import Features, DoseNotExist
 
 
 class ShapeFileUploadViewSet(GenericViewSet):
@@ -74,8 +65,11 @@ class FeaturesApiView(GenericViewSet):
             raise e
 
     def retrieve(self, request, pk, layer_name):
-        geo_jsons = Features(table_name=layer_name).get(pk=pk)
-        return Response(status=200, data=geo_jsons)
+        try:
+            geo_jsons = Features(table_name=layer_name).get(pk=pk)
+            return Response(status=200, data=geo_jsons)
+        except DoseNotExist as d:
+            raise Http404(d)
 
     def update(self, request, pk, layer_name):
         try:

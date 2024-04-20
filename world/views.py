@@ -65,39 +65,19 @@ class FeaturesApiView(GenericViewSet):
             result = Features(table_name=layer_name).get(offset=Offset, limit=Limit)
 
             return Response(status=200, data={
-                        "page": page,
-                        "next": next_url,
-                        "previous": previous_url,
-                        "results": result
-                    })
+                "page": page,
+                "next": next_url,
+                "previous": previous_url,
+                "results": result
+            })
         except Exception as e:
             raise e
 
 
 class FeatureDetailApiView(APIView):
     def get(self, reqeust, layer_name, pk):
-        with (getDatabaseConnection() as connection):
-            geo_table = getGeometryColumns(connection, layer_name)
-            primary_column = getPrimaryColumn(connection, layer_name)
-            sql_schema = SQL('Select * from {} where {}=%s').format(
-                Identifier(layer_name), Identifier(primary_column)
-            )
-            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                try:
-
-                    cursor.execute(sql_schema, (pk,))
-                    result = cursor.fetchone()
-
-                    geo_bin = result.pop(geo_table, None)
-                    geometry = GEOSGeometry(geo_bin)
-                    geo_json = {
-                        "geometry": geometry.geojson,
-                        "properties": result,
-                    }
-
-                    return Response(status=200, data=geo_json)
-                except Exception as e:
-                    raise e
+        geo_jsons = Features(table_name=layer_name).get(pk=pk)
+        return Response(status=200, data=geo_jsons)
 
     def put(self, request, layer_name, pk):
         try:

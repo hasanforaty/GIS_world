@@ -64,9 +64,20 @@ class Features:
     def get(self, **kwargs):
         limit = kwargs.pop('limit', 1000)
         offset = kwargs.pop('offset', 0)
+        pk = kwargs.pop('pk',None)
+
         with (getDatabaseConnection() as con):
             geo_table = self.getGeometryColumns(con)
-            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ').format(
+            if pk is not None:
+                pk_column = self.getPrimaryColumn(con)
+                kwargs[pk_column] = pk
+            sql_command_query = ""
+            if len(kwargs) > 0:
+                sql_command_query = "where "
+                for key, value in kwargs.items():
+                    sql_command_query += f" And {key} LIKE {value} "
+                sql_command_query.replace('And', '', 1)
+            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s '+sql_command_query).format(
                 Identifier(self.table_name),
             )
 

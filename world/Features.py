@@ -21,8 +21,8 @@ class Features:
     def __init__(self, table_name):
         self.table_name = table_name
 
-    def getPrimaryColumn(self, connection):
-        with connection.cursor() as cursor:
+    def getPrimaryColumn(self, con):
+        with con.cursor() as cursor:
             cursor.execute(
                 """
                 SELECT a.attname AS name, format_type(a.atttypid, a.atttypmod) AS type
@@ -35,8 +35,8 @@ class Features:
             )
             return cursor.fetchone()[0]
 
-    def getGeometryColumns(self, connection):
-        with connection.cursor() as cursor:
+    def getGeometryColumns(self, con):
+        with con.cursor() as cursor:
             cursor.execute("select f_geometry_column from geometry_columns where f_table_name = %s", (self.table_name,))
             return cursor.fetchone()[0]
 
@@ -44,9 +44,9 @@ class Features:
 
         geos = GEOSGeometry(geometry)
         wkb = geos.wkb
-        with getDatabaseConnection() as connection:
-            with connection.cursor(cursor_factory=RealDictCursor) as curser:
-                geoColumn = self.getGeometryColumns(connection)
+        with getDatabaseConnection() as con:
+            with con.cursor(cursor_factory=RealDictCursor) as curser:
+                geoColumn = self.getGeometryColumns(con)
                 sql_command = "Insert into {} " + "(" + geoColumn
                 for key in properties.keys():
                     sql_command += ', ' + key
@@ -60,3 +60,27 @@ class Features:
                 value.insert(0, wkb)
                 curser.execute(sql, value)
                 result = geos.geojson
+
+    def get(self, **kwargs):
+        limit = kwargs.pop('limit', 1000)
+        offset = kwargs.pop('offset', 0)
+        with (getDatabaseConnection() as con):
+            geo_table = self.getGeometryColumns(con)
+            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ').format(
+                Identifier(self.table_name),
+            )
+
+            with con.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(sql_schema, (limit, offset))
+                results = cursor.fetchall()
+                list = []
+                for result in results:
+                    geo_bin = result.pop(geo_table, None)
+                    geometry = GEOSGeometry(geo_bin)
+                    geo_json = {
+                        "geometry": geometry.geojson,
+                        "properties": result,
+                    }
+                    list.append(geo_json)
+
+                return list

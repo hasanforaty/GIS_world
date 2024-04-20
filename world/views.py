@@ -33,7 +33,7 @@ class FeaturesApiView(GenericViewSet):
 
     def create(self, request, layer_name):
         try:
-            Features(table_name=layer_name).create(
+            result = Features(table_name=layer_name).create(
                 geometry=str(request.data['geometry']),
                 properties=request.data['properties']
             )
@@ -61,33 +61,17 @@ class FeaturesApiView(GenericViewSet):
             pass
         query = f'?page={page + 1}&limit={Limit}'
         next_url = url + query
-        with (getDatabaseConnection() as connection):
-            geo_table = getGeometryColumns(connection, layer_name)
-            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s').format(
-                Identifier(layer_name),
-            )
-            with connection.cursor(cursor_factory=RealDictCursor) as cursor:
-                try:
-                    cursor.execute(sql_schema, (Limit, Offset))
-                    results = cursor.fetchall()
-                    list = []
-                    for result in results:
-                        geo_bin = result.pop(geo_table, None)
-                        geometry = GEOSGeometry(geo_bin)
-                        geo_json = {
-                            "geometry": geometry.geojson,
-                            "properties": result,
-                        }
-                        list.append(geo_json)
+        try:
+            result = Features(table_name=layer_name).get(offset=Offset, limit=Limit)
 
-                    return Response(status=200, data={
+            return Response(status=200, data={
                         "page": page,
                         "next": next_url,
                         "previous": previous_url,
-                        "results": list
+                        "results": result
                     })
-                except Exception as e:
-                    raise e
+        except Exception as e:
+            raise e
 
 
 class FeatureDetailApiView(APIView):

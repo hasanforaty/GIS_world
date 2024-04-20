@@ -1,5 +1,3 @@
-from multiprocessing import connection
-
 import psycopg2
 from django.contrib.gis.geos import GEOSGeometry
 from psycopg2.extras import RealDictCursor

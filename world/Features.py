@@ -64,7 +64,7 @@ class Features:
     def get(self, **kwargs):
         limit = kwargs.pop('limit', 1000)
         offset = kwargs.pop('offset', 0)
-        pk = kwargs.pop('pk',None)
+        pk = kwargs.pop('pk', None)
 
         with (getDatabaseConnection() as con):
             geo_table = self.getGeometryColumns(con)
@@ -77,7 +77,7 @@ class Features:
                 for key, value in kwargs.items():
                     sql_command_query += f" And {key} LIKE {value} "
                 sql_command_query.replace('And', '', 1)
-            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s '+sql_command_query).format(
+            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ' + sql_command_query).format(
                 Identifier(self.table_name),
             )
 
@@ -95,3 +95,23 @@ class Features:
                     geo_jsons.append(geo_json)
 
                 return geo_jsons
+
+    def update(self, pk, geometry: str = None, **kwargs):
+
+        with getDatabaseConnection() as con:
+            if geometry is not None:
+                geometry_column = self.getGeometryColumns(con=con)
+                geos = GEOSGeometry(geometry)
+                wkb = geos.wkb
+                kwargs[geometry_column] = wkb
+            primary_column = self.getPrimaryColumn(con)
+            kwargs.pop(primary_column, None)
+            with con.cursor(cursor_factory=RealDictCursor) as curser:
+                sql_command = "Update {} " + "Set "
+                for key in kwargs.keys():
+                    sql_command += ', ' + key + " = %s"
+                sql_command.replace(',', '', 1)
+                sql_command += " Where  {} = " + pk
+                sql = SQL(sql_command).format(Identifier(self.table_name), Identifier(primary_column))
+                value = list(wkb.values())
+                curser.execute(sql, value)

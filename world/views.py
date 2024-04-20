@@ -81,24 +81,12 @@ class FeatureDetailApiView(APIView):
 
     def put(self, request, layer_name, pk):
         try:
-            geos = GEOSGeometry(str(request.data['geometry']))
-
             properties = request.data['properties']
-            wkb = geos.wkb
-            with getDatabaseConnection() as connection:
-                primary_column = getPrimaryColumn(connection, layer_name)
-                properties.pop(primary_column, None)
-                with connection.cursor(cursor_factory=RealDictCursor) as curser:
-                    geoColumn = getGeometryColumns(connection, layer_name)
-                    sql_command = "Update {} " + "Set " + geoColumn + " = %s"
-                    for key in properties.keys():
-                        sql_command += ', ' + key + " = %s"
-                    sql_command += " Where  {} = " + pk
-                    print(sql_command)
-                    sql = SQL(sql_command).format(Identifier(layer_name), Identifier(primary_column))
-                    value = list(properties.values())
-                    value.insert(0, wkb)
-                    curser.execute(sql, value)
+            Features(table_name=layer_name).update(
+                geometry=str(request.data['geometry']),
+                pk=pk,
+                **properties
+            )
         except ValueError as e:
             return Response(status=422, exception=e)
         except psycopg2.errors.InvalidParameterValue as e:

@@ -73,6 +73,10 @@ class FeaturesApiView(GenericViewSet):
         except Exception as e:
             raise e
 
+    def retrieve(self, request, pk, layer_name):
+        geo_jsons = Features(table_name=layer_name).get(pk=pk)
+        return Response(status=200, data=geo_jsons)
+
 
 class FeatureDetailApiView(APIView):
     def get(self, reqeust, layer_name, pk):

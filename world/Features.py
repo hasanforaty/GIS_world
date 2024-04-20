@@ -62,8 +62,8 @@ class Features:
                 return geos.geojson
 
     def get(self, **kwargs):
-        limit = kwargs.pop('limit', 1000)
-        offset = kwargs.pop('offset', 0)
+        kwargs.pop('limit', 1000)
+        kwargs.pop('offset', 0)
         pk = kwargs.pop('pk', None)
 
         with (getDatabaseConnection() as con):
@@ -75,14 +75,14 @@ class Features:
             if len(kwargs) > 0:
                 sql_command_query = "where "
                 for key, value in kwargs.items():
-                    sql_command_query += f" And {key} LIKE {value} "
-                sql_command_query.replace('And', '', 1)
-            sql_schema = SQL('Select * from {} LIMIT %s OFFSET %s ' + sql_command_query).format(
+                    sql_command_query += f" And {key} = {value} "
+                sql_command_query = sql_command_query.replace('And', '', 1)
+            sql_schema = SQL('Select * from {} ' + sql_command_query).format(
                 Identifier(self.table_name),
             )
 
             with con.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute(sql_schema, (limit, offset))
+                cursor.execute(sql_schema)
                 result = cursor.fetchone()
                 geo_bin = result.pop(geo_table, None)
                 geometry = GEOSGeometry(geo_bin)

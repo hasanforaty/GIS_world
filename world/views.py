@@ -11,51 +11,39 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from urllib.parse import urlparse, parse_qsl, urlencode
 
-from rest_framework.viewsets import ViewSet
+from rest_framework.viewsets import ViewSet, GenericViewSet
 
 from world.serializers import ShapeFileSerializer
+from Features import Features
 
 
-class ShapeFileUploadViewSet(ViewSet):
+class ShapeFileUploadViewSet(GenericViewSet):
+    serializer_class = ShapeFileSerializer
 
     def create(self, request):
-        serializer = ShapeFileSerializer(data=request.data)
+        serializer = self.get_serializer(data=request)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(status.HTTP_400_BAD_REQUEST)
 
 
-class FeaturesApiView(APIView):
+class FeaturesApiView(GenericViewSet):
+    serializer_class = ShapeFileSerializer
 
-    def post(self, request, layer_name, format=None):
+    def create(self, request, layer_name):
         try:
-            geos = GEOSGeometry(str(request.data['geometry']))
-            properties = request.data['properties']
-            wkb = geos.wkb
-            with getDatabaseConnection() as connection:
-                with connection.cursor(cursor_factory=RealDictCursor) as curser:
-                    geoColumn = getGeometryColumns(connection, layer_name)
-                    sql_command = "Insert into {} " + "(" + geoColumn
-                    for key in properties.keys():
-                        sql_command += ', ' + key
-                    sql_command += ') values (%s'
-                    for _ in properties.values():
-                        sql_command += ', %s'
-                    sql_command += ")"
-                    print(sql_command)
-                    sql = SQL(sql_command).format(Identifier(layer_name))
-                    value = list(properties.values())
-                    value.insert(0, wkb)
-                    curser.execute(sql, value)
-                    result = geos.geojson
+            Features(table_name=layer_name).create(
+                geometry=str(request.data['geometry']),
+                properties=request.data['properties']
+            )
         except ValueError as e:
             return Response(status=422, exception=e)
         except psycopg2.errors.InvalidParameterValue as e:
             return Response(status=400, data="Missmatch :" + str(e))
         return Response(status=200, data=result)
 
-    def get(self, request, layer_name):
+    def list(self, request, layer_name):
         Limit = 1000
         Offset = 0
         page = 1
